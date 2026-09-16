@@ -2,12 +2,12 @@
 
 Standalone lighting controller for a **Glorious GMMK 3 100% ANSI** running custom
 QMK firmware with the OpenRGB Raw HID protocol. One exe, four threads, no
-service, no middleware. Keys glow green, flash blue on press, and fade back.
+service, no middleware. Written in Rust.
 
-This README is written as a handoff to whoever works on this next — human or
-model. It is deliberately heavy on *why*, because almost every hard part of this
-project was a plausible assumption that turned out to be false, and the code
-looks arbitrary without the reasons.
+Keys glow green, flash blue on press, and fade back.
+Independent control of side LED bars.
+Caps Lock indicated via top right LED.
+
 
 ---
 
