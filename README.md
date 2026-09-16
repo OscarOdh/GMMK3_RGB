@@ -5,7 +5,9 @@ QMK firmware with the OpenRGB Raw HID protocol. One exe, four threads, no
 service, no middleware. Written in Rust.
 
 Keys glow green, flash blue on press, and fade back.
+
 Independent control of side LED bars.
+
 Caps Lock indicated via top right LED.
 
 
