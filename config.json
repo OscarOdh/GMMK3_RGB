@@ -1,0 +1,23 @@
+{
+  "zones": {
+    "main_keys": "#00FF00",
+    "left_underglow": "#001900",
+    "right_underglow": "#FFF0C8",
+    "knob_accent": "#000000"
+  },
+  "reactive_effect": {
+    "press_color": "#0000FF",
+    "fade_duration_sec": 0.65
+  },
+  "caps_lock_indicator": {
+    "enabled": true,
+    "color": "#00FF00"
+  },
+  "start_hidden": false,
+  "device": {
+    "vid": null,
+    "pid": null,
+    "packet_size": null,
+    "direct_mode": 45
+  }
+}

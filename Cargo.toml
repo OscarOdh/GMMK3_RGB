@@ -1,0 +1,47 @@
+[package]
+name = "gmmk3_rgb"
+version = "0.1.0"
+edition = "2024"
+description = "Standalone RGB controller for a QMK/OpenRGB Glorious GMMK 3 100% ANSI"
+
+[dependencies]
+# Native dark-mode GUI. glow only (no wgpu, no accesskit) keeps the binary small
+# and startup instant.
+eframe = { version = "0.36.1", default-features = false, features = [
+    "glow",
+    "default_fonts",
+] }
+egui = "0.36.1"
+
+# Raw USB HID transport to the QMK OpenRGB endpoint.
+hidapi = "2.6.6"
+
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+
+# System tray, with no features at all:
+#   * the defaults (gtk/libxdo) are Linux-only;
+#   * `common-controls-v6` makes muda import `TaskDialogIndirect` for its About
+#     dialog, which only exists in comctl32 v6. Without an embedded application
+#     manifest the loader binds to the v5 comctl32 in System32 and the process
+#     dies at startup with "entry point not found". We never show an About
+#     dialog, so the feature is pure cost.
+tray-icon = { version = "0.24.2", default-features = false }
+
+windows-sys = { version = "0.61.2", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Gdi",
+    "Win32_Security",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Power",
+    "Win32_System_Threading",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
