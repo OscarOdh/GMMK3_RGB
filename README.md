@@ -542,49 +542,6 @@ recover, then use the stress test in `--debug` to see whether it reproduces.
 
 ---
 
-## Before you publish this repo
-
-No credentials or personal data here. `config.json` is just colors. Three small
-bits of local clutter to clear out.
-
-**`sync.ffs_db`** is a hidden FreeFileSync database from your own backup setup.
-Machine-specific, no value to anyone else.
-
-**`.cargo.lnk`** is a Windows shortcut pointing at a path on your machine. It
-won't resolve anywhere else.
-
-**`target/`** isn't present right now, which is good. Keep it that way, because
-it reaches ~1.8 GB.
-
-**`dist/` currently ships the binary twice.** `gmmk3_rgb.exe` (6.5 MB) and
-`gmmk3_rgb.zip` (3 MB) are the same program, and the download link at the top of
-this README points at the zip. Git stores every version of a binary forever, so
-carrying both makes each future release cost the repo roughly three times what it
-needs to. Keeping just the zip and `config.json`, and dropping the loose exe, is
-the tidier call.
-
-Committing a binary at all is a deliberate choice worth having made on purpose.
-GitHub's convention is to attach it to a *Release*, which keeps it out of history
-entirely. The counter-argument is real here though: a direct download link in the
-README beats sending people to a Releases tab, and `dist\` is where `config.json`
-has to live regardless.
-
-`Cargo.lock` **should** stay committed, because this is a binary rather than a
-library, and the lock file is what makes a build reproducible.
-
-Suggested `.gitignore`:
-
-```gitignore
-target/
-sync.ffs_db
-*.lnk
-debug.txt
-probe.txt
-keymap.json
-```
-
----
-
 ## Deliberately not done
 
 - **Bulk `SET_LEDS`.** See above.
