@@ -9,6 +9,14 @@ Rust.
 
 Caps Lock indicated via top right LED near knob.
 
+### ⬇ [**Download gmmk3_rgb.zip**](https://github.com/OscarOdh/GMMK3_RGB/raw/main/dist/gmmk3_rgb.zip) · 3 MB
+
+Unzip anywhere and run `gmmk3_rgb.exe`. No installer, no dependencies, nothing
+to configure — it starts lighting the keyboard immediately.
+
+⚠️ Requires the keyboard to be running **custom QMK firmware with OpenRGB Raw
+HID**. It will not talk to stock Glorious firmware — see [Requirements](#requirements).
+
 ---
 
 ## What problem does this solve?
@@ -112,6 +120,16 @@ detects VIA mode and refuses rather than misinterpreting its replies.
 
 ## Quick start
 
+### Just run it
+
+[Download `gmmk3_rgb.zip`](https://github.com/OscarOdh/GMMK3_RGB/raw/main/dist/gmmk3_rgb.zip),
+unzip it anywhere, and run `gmmk3_rgb.exe`. That's the whole install — no
+installer, no runtime to fetch, no registry keys.
+
+Keep `config.json` next to the exe; that's where your colours are saved.
+
+### Or build it yourself
+
 ```bash
 git clone https://github.com/OscarOdh/GMMK3_RGB.git
 cd GMMK3_RGB
@@ -129,11 +147,10 @@ That clean is worth running when you're finished: `target\` reaches ~1.8 GB (abo
 1.2 GB of it debug artifacts from `cargo build` and `cargo clippy`), against ~7 MB
 for the project without it. Only `dist\` needs keeping.
 
-**Not building it?** Just run `dist\gmmk3_rgb.exe`. Nothing to install.
+### If nothing lights up
 
-If the lighting doesn't change, run `gmmk3_rgb.exe --debug` before anything else
-— and read the next section first, because most of the plausible explanations are
-wrong.
+Run `gmmk3_rgb.exe --debug` before anything else — and read the next section
+first, because most of the plausible explanations are wrong.
 
 ---
 
@@ -538,13 +555,18 @@ won't resolve anywhere else.
 **`target/`** isn't present right now, which is good — keep it that way. It
 reaches ~1.8 GB.
 
-**`dist/gmmk3_rgb.exe` is a judgement call.** Committing a 6.8 MB binary means
-every future version is stored in the repo's history forever. GitHub's convention
-is to attach it to a *Release* instead. The counter-argument is real here, though:
-this app is for people who want to run it, not read it, and `dist\` is where
-`config.json` has to live. Either is defensible — just decide on purpose. If you
-go the Releases route, keep `dist/config.json` committed and ship the exe as a
-release asset.
+**`dist/` currently ships the binary twice.** `gmmk3_rgb.exe` (6.5 MB) and
+`gmmk3_rgb.zip` (3 MB) are the same program, and the download link at the top of
+this README points at the zip. Git stores every version of a binary forever, so
+carrying both makes each future release cost the repo roughly three times what it
+needs to. Keeping just the zip and `config.json`, and dropping the loose exe, is
+the tidier call.
+
+Committing a binary at all is a deliberate choice worth having made on purpose:
+GitHub's convention is to attach it to a *Release*, which keeps it out of history
+entirely. The counter-argument is real here though — a direct download link in
+the README beats sending people to a Releases tab, and `dist\` is where
+`config.json` has to live regardless.
 
 `Cargo.lock` **should** stay committed — this is a binary, not a library, and the
 lock file is what makes a build reproducible.
