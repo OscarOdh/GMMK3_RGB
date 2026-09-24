@@ -1,13 +1,141 @@
 # GMMK3 RGB
 
-Standalone lighting controller for a **Glorious GMMK 3 100% ANSI** running custom
-QMK firmware with the OpenRGB Raw HID protocol. One exe, four threads, no
-service, no middleware. Written in Rust.
+**Your keyboard glows green. Every key you press flashes blue and fades back. One
+6 MB exe, no service, no launcher, no account.**
+
+A standalone lighting controller for a **Glorious GMMK 3 100% ANSI** running
+custom QMK firmware with the OpenRGB Raw HID protocol. Four threads, written in
+Rust.
 
 Keys glow green, flash blue on press, and fade back.
 Independent control of side LED bars.
 Caps Lock indicated via top right LED.
 
+---
+
+## What problem does this solve?
+
+Keyboard RGB software has a reputation, and it's earned. The typical vendor app
+is a few hundred megabytes, installs a background service and a launcher and an
+updater, wants an account, phones home, and consumes measurable CPU to animate
+some LEDs. OpenRGB is a huge improvement but it's a general-purpose tool for
+hundreds of devices, which means a lot of abstraction between you and the one
+keyboard you actually own.
+
+This is the opposite approach: a single executable that does exactly one thing
+for exactly one keyboard, with the protocol details verified against the hardware
+rather than inferred from a spec.
+
+**Why write it at all, when the keyboard has onboard effects?** Because
+reactive-typing effects that live in the firmware can't be tuned, and the ones
+that can be tuned need software anyway. This does the effect on the host: the app
+computes each frame, works out which of 125 LEDs actually changed, and sends only
+those. When you stop typing it stops sending. A still keyboard costs one atomic
+read and an array compare per tick.
+
+**Why Rust?** Because the hard parts of this are a low-level keyboard hook that
+must return in microseconds or Windows drops it, and a USB endpoint that stalls if
+you burst writes at it. Both are places where a garbage-collection pause or a
+surprise allocation shows up as your keyboard stuttering.
+
+> **Important prerequisite:** this requires the keyboard to be running **custom
+> QMK firmware with OpenRGB Raw HID support**. It will not talk to stock Glorious
+> firmware. That's the trade — you flash the keyboard once, and afterwards you
+> own the lighting stack completely.
+
+---
+
+## Features
+
+**Reactive typing, done on the host.** Keys sit at your chosen base color; each
+keypress flashes its LED and fades back over a configurable duration. Because the
+fade is computed here rather than in firmware, the color and the timing are both
+just sliders.
+
+**60 FPS that costs nothing when idle.** The render loop diffs each frame against
+what the board is already showing and writes only the differences — capped at 24
+LED writes per tick so a full repaint spreads over several frames instead of
+flooding the USB endpoint. Nothing changing means nothing sent.
+
+**Independent zones.** The main key matrix, the left underglow bar, the right
+underglow bar and the knob accent are four separate colors. Set the underglow to
+a dim warm white and the keys to green if that's what you want.
+
+**Caps Lock you can see.** While Caps Lock is on, the knob LED changes color.
+Tracked properly, too — see the note about `GetKeyState` below, which is the kind
+of thing that looks trivial and isn't.
+
+**Lives in the tray.** Close the window and it keeps running. Launch the exe
+again and instead of starting a second copy, it tells the running one to show
+itself. Optionally starts hidden.
+
+**Sleep and resume survive.** The app listens for Windows power broadcasts and
+waits 3 seconds after resume before touching USB, because the bus hasn't finished
+re-enumerating yet. Reconnects cleanly instead of coming back dead.
+
+**It refuses to fight other software.** If OpenRGB, Glorious Core, SignalRGB,
+Artemis, VIA or QMK Toolbox is running, it declines to connect and tells you
+which one. Windows lets several processes hold the same HID device, and when two
+both write, the lighting is nondeterministic and debugging becomes impossible.
+This is a correctness feature, not politeness.
+
+**A diagnostics mode written for a human.** `--debug` runs seven plain-language
+checks, each reporting what it found *and what to do about it* — then asks you
+whether the keyboard actually turned green, because software can't see your
+keyboard and those are genuinely different questions. Saves a full report to a
+text file.
+
+**Learns your keymap if the default is wrong.** A guided mode: press each key,
+and it records which scan code maps to which LED. Writes `keymap.json`; absent
+means the built-in verified table is used.
+
+**Live edits, explicit saves.** Moving a slider updates the keyboard instantly
+through a channel and never touches disk. Disk is written only when you click
+Save. You can experiment freely and walk away without having changed anything.
+
+**No console window, no installer, no dependencies.** One exe plus a
+`config.json`. Copy the folder anywhere.
+
+---
+
+## Requirements
+
+| What | Notes |
+|---|---|
+| Windows 10 or 11 | Windows-only by design — Win32 keyboard hook, tray, power broadcasts |
+| A Glorious GMMK 3 100% ANSI | VID `504B`, PID `320F`, interface `MI_01` |
+| **Custom QMK firmware with OpenRGB Raw HID** | Non-negotiable. Stock firmware doesn't expose the protocol. |
+| Rust 1.85+ *(to build)* | Edition 2024. Not needed if you just run the prebuilt exe. |
+
+The keyboard must also **not** be in VIA mode (`Fn+O` toggles it) — the app
+detects VIA mode and refuses rather than misinterpreting its replies.
+
+---
+
+## Quick start
+
+```bash
+git clone https://github.com/OscarOdh/GMMK3_RGB.git
+cd GMMK3_RGB
+cargo build --release
+```
+
+Then run it from **`dist\`** — the ready-to-go copy, exe plus config, and where
+you should run it from.
+
+Keeping it outside `target\` matters: `config.json` lives next to the exe, so a
+build directory is the one place it must not be. `cargo clean` would take your
+settings with it.
+
+That clean is worth running when you're finished: `target\` reaches ~1.8 GB (about
+1.2 GB of it debug artifacts from `cargo build` and `cargo clippy`), against ~7 MB
+for the project without it. Only `dist\` needs keeping.
+
+**Not building it?** Just run `dist\gmmk3_rgb.exe`. Nothing to install.
+
+If the lighting doesn't change, run `gmmk3_rgb.exe --debug` before anything else
+— and read the next section first, because most of the plausible explanations are
+wrong.
 
 ---
 
@@ -75,6 +203,16 @@ main thread ──── eframe/winit event loop ──── gui.rs
 "tray"   thread ── tray icon + menu (own pump, may block on TrackPopupMenu)
 ```
 
+**Why four, in plain terms.** Windows delivers many things — the tray menu, the
+low-level keyboard hook, power notifications — through a per-thread *message
+pump*, a loop that pulls messages and dispatches them. A thread that blocks stops
+pumping. The tray menu blocks its thread for as long as it's open, which is fine
+on its own thread and catastrophic on the thread that owns the keyboard hook:
+Windows gives a hook callback a deadline (`LowLevelHooksTimeout`) and silently
+removes the hook if it's missed, which shows up as typing stuttering
+*system-wide*. So the tray gets its own thread, the hook gets its own thread, USB
+gets its own thread, and the GUI keeps the main one.
+
 Data flow:
 
 - **GUI → render**: `mpsc::Sender<render::Msg>` behind a
@@ -92,6 +230,8 @@ Data flow:
 
 ### `main.rs` — entry, mode dispatch, wiring
 
+The startup sequence, in order, and the order is deliberate.
+
 Handles `--probe` and `--debug` *before* the single-instance guard, so
 diagnostics run while the main app is up. Acquires the instance mutex, loads
 config and keymap, spawns input and render threads, then hands off to eframe.
@@ -103,14 +243,14 @@ means **`println!` goes nowhere**; use the diagnostics report or a file.
 
 ### `protocol.rs` — the QMK OpenRGB wire format
 
-The only file that touches `hidapi`. Contains the verified command layouts, the
-HID report-descriptor parser that measures packet size, and the VIA-vs-OpenRGB
-handshake.
+The only file that touches `hidapi` — every USB byte in the program goes through
+here. Contains the verified command layouts, the HID report-descriptor parser
+that measures packet size, and the VIA-vs-OpenRGB handshake.
 
 Special considerations:
 - `open()` refuses on three conditions before it will return a handle: a
   conflicting process, an unreadable report size, and VIA mode. All three are
-  fail-closed by design.
+  fail-closed by design — it would rather not run than run wrong.
 - `set_direct_mode()` **verifies by read-back**. Do not simplify this to a
   fire-and-forget write.
 - `drain_input()` is called after writes so firmware replies cannot accumulate.
@@ -134,9 +274,13 @@ Special considerations:
 
 ### `input.rs` — Win32 hook and power events
 
-One thread, one message pump, two jobs. Exposes everything through statics:
+One thread, one message pump, two jobs: watch every keystroke system-wide, and
+listen for sleep/resume. Exposes everything through statics:
 `PRESS_MS[KEY_SLOTS]`, `LAST_PRESS_MS`, `LAST_KEY_ID`/`LAST_KEY_SEQ` (keymap
 learning), `CAPS_ON`, `SUSPENDED`, `RESUME_GRACE_UNTIL_MS`.
+
+Statics-and-atomics rather than channels or locks, because the hook callback runs
+on Windows' deadline and must not allocate or block.
 
 Caps Lock is *tracked*, not queried (see the platform table). The hook toggles
 `CAPS_ON` on the `VK_CAPITAL` key-down transition and uses a `CAPS_HELD` flag to
@@ -150,6 +294,8 @@ Special considerations:
   the bus has not finished re-enumerating.
 
 ### `keymap.rs` — scan code ↔ LED index
+
+The translation table from "a key was pressed" to "which LED to flash."
 
 Keys are identified by **PS/2 set-1 scan code + extended flag**, not virtual key
 code: VK changes with Num Lock and layout, scan codes do not. Two cases need a
@@ -331,22 +477,7 @@ table is used.
 
 ---
 
-## Build and run
-
-```bash
-cargo build --release
-```
-
-The ready-to-run copy is **`dist\`** — exe plus config, and where you should run
-it from. Keeping it outside `target\` matters: `config.json` lives next to the
-exe, so a build directory is the one place it must not be. `cargo clean` would
-take your settings with it.
-
-That clean is worth running when finished: `target\` reaches ~1.8 GB (about
-1.2 GB of it debug artifacts from `cargo build` and `cargo clippy`), against
-~7 MB for the project without it. Only `dist\` needs keeping.
-
-### Working in this repo
+## Working in this repo
 
 - Windows-only by design (Win32 hook, tray, power broadcasts).
 - `cargo clippy --all-targets -- -D warnings` is expected to pass clean.
@@ -388,6 +519,44 @@ The endpoint stalled. Because lighting and typing share one USB device, a
 stalled OUT pipe swallows key-up reports. Historically caused by a wrong report
 size or a misframed bulk write; both are now designed out. Unplug and replug to
 recover, then use the stress test in `--debug` to see whether it reproduces.
+
+---
+
+## Before you publish this repo
+
+No credentials or personal data here — `config.json` is just colors. Three small
+bits of local clutter to clear out:
+
+**`sync.ffs_db`** is a hidden FreeFileSync database from your own backup setup.
+Machine-specific, no value to anyone else.
+
+**`.cargo.lnk`** is a Windows shortcut pointing at a path on your machine. It
+won't resolve anywhere else.
+
+**`target/`** isn't present right now, which is good — keep it that way. It
+reaches ~1.8 GB.
+
+**`dist/gmmk3_rgb.exe` is a judgement call.** Committing a 6.8 MB binary means
+every future version is stored in the repo's history forever. GitHub's convention
+is to attach it to a *Release* instead. The counter-argument is real here, though:
+this app is for people who want to run it, not read it, and `dist\` is where
+`config.json` has to live. Either is defensible — just decide on purpose. If you
+go the Releases route, keep `dist/config.json` committed and ship the exe as a
+release asset.
+
+`Cargo.lock` **should** stay committed — this is a binary, not a library, and the
+lock file is what makes a build reproducible.
+
+Suggested `.gitignore`:
+
+```gitignore
+target/
+sync.ffs_db
+*.lnk
+debug.txt
+probe.txt
+keymap.json
+```
 
 ---
 
