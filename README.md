@@ -3,13 +3,12 @@
 **Your keyboard glows green. Every key you press flashes blue and fades back. One
 6 MB exe, no service, no launcher, no account.**
 
-A standalone lighting controller for a **Glorious GMMK 3 100% ANSI** running
+A lightweight standalone lighting controller for a **Glorious GMMK 3 100% ANSI** running
 custom QMK firmware with the OpenRGB Raw HID protocol. Four threads, written in
 Rust.
 
-Keys glow green, flash blue on press, and fade back.
-Independent control of side LED bars.
-Caps Lock indicated via top right LED.
+All coloring is customizable.
+Caps Lock indicated via top right LED near knob.
 
 ---
 
