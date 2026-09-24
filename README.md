@@ -9,6 +9,12 @@ Rust.
 
 Caps Lock indicated via top right LED near knob.
 
+<img src="docs/GMMK3RGB.png" width="420"
+     alt="The GMMK3 RGB control window: live device status showing the detected
+     keyboard, protocol version, packet size and frames sent; colour pickers for
+     the four LED zones with their index ranges; a Caps Lock indicator toggle;
+     the reactive press colour and fade-back slider; and keymap learning.">
+
 ### ⬇ [**Download gmmk3_rgb.zip**](https://github.com/OscarOdh/GMMK3_RGB/raw/main/dist/gmmk3_rgb.zip) · 3 MB
 
 Unzip anywhere and run `gmmk3_rgb.exe`. No installer, no dependencies, nothing
