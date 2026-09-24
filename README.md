@@ -1,13 +1,12 @@
 # GMMK3 RGB
 
-**Your keyboard glows green. Every key you press flashes blue and fades back. One
-6 MB exe, no service, no launcher, no account.**
+**Your keys sit at whatever color you pick. Press one and it flashes a second
+color, then fades back. One 6 MB exe, no service, no launcher, no account.**
 
 A lightweight standalone lighting controller for a **Glorious GMMK 3 100% ANSI** running
 custom QMK firmware with the OpenRGB Raw HID protocol. Four threads, written in
 Rust.
 
-All coloring is customizable.
 Caps Lock indicated via top right LED near knob.
 
 ---
@@ -445,6 +444,10 @@ carrying stale bytes.
 
 Read once at startup; written only when **Save** is clicked. Moving a slider
 updates the keyboard live through the channel and never touches disk.
+
+The colours below are just the shipped defaults — one person's taste, nothing
+structural. Every `zones` entry, `press_color` and the Caps Lock colour is a
+picker in the GUI; edit them there or in this file, whichever you prefer.
 
 ```json
 {
