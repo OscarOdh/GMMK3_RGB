@@ -12,10 +12,10 @@ Caps Lock indicated via top right LED near knob.
 ### ⬇ [**Download gmmk3_rgb.zip**](https://github.com/OscarOdh/GMMK3_RGB/raw/main/dist/gmmk3_rgb.zip) · 3 MB
 
 Unzip anywhere and run `gmmk3_rgb.exe`. No installer, no dependencies, nothing
-to configure — it starts lighting the keyboard immediately.
+to configure. It starts lighting the keyboard immediately.
 
 ⚠️ Requires the keyboard to be running **custom QMK firmware with OpenRGB Raw
-HID**. It will not talk to stock Glorious firmware — see [Requirements](#requirements).
+HID**. It will not talk to stock Glorious firmware. See [Requirements](#requirements).
 
 ---
 
@@ -34,7 +34,7 @@ rather than inferred from a spec.
 
 **Why write it at all, when the keyboard has onboard effects?** Because
 reactive-typing effects that live in the firmware can't be tuned, and the ones
-that can be tuned need software anyway. This does the effect on the host: the app
+that can be tuned need software anyway. This does the effect on the host. The app
 computes each frame, works out which of 125 LEDs actually changed, and sends only
 those. When you stop typing it stops sending. A still keyboard costs one atomic
 read and an array compare per tick.
@@ -46,29 +46,30 @@ surprise allocation shows up as your keyboard stuttering.
 
 > **Important prerequisite:** this requires the keyboard to be running **custom
 > QMK firmware with OpenRGB Raw HID support**. It will not talk to stock Glorious
-> firmware. That's the trade — you flash the keyboard once, and afterwards you
-> own the lighting stack completely.
+> firmware. That's the trade: you flash the keyboard once, and afterwards you own
+> the lighting stack completely.
 
 ---
 
 ## Features
 
-**Reactive typing, done on the host.** Keys sit at your chosen base color; each
-keypress flashes its LED and fades back over a configurable duration. Because the
-fade is computed here rather than in firmware, the color and the timing are both
-just sliders.
+**Reactive typing, done on the host.** Keys sit at your chosen base color, and
+each keypress flashes its LED and fades back over a configurable duration.
+Because the fade is computed here rather than in firmware, the color and the
+timing are both just sliders.
 
 **60 FPS that costs nothing when idle.** The render loop diffs each frame against
-what the board is already showing and writes only the differences — capped at 24
+what the board is already showing and writes only the differences, capped at 24
 LED writes per tick so a full repaint spreads over several frames instead of
 flooding the USB endpoint. Nothing changing means nothing sent.
 
 **Independent zones.** The main key matrix, the left underglow bar, the right
-underglow bar and the knob accent are four separate colors. Set the underglow to
-a dim warm white and the keys to green if that's what you want.
+underglow bar and the knob accent are four separate colors. A dim warm white
+spill under a cool matrix, or each bar its own shade, or all four the same.
+Whatever you pick is a colour picker away.
 
 **Caps Lock you can see.** While Caps Lock is on, the knob LED changes color.
-Tracked properly, too — see the note about `GetKeyState` below, which is the kind
+Tracked properly, too. See the note about `GetKeyState` below, which is the kind
 of thing that looks trivial and isn't.
 
 **Lives in the tray.** Close the window and it keeps running. Launch the exe
@@ -86,14 +87,13 @@ both write, the lighting is nondeterministic and debugging becomes impossible.
 This is a correctness feature, not politeness.
 
 **A diagnostics mode written for a human.** `--debug` runs seven plain-language
-checks, each reporting what it found *and what to do about it* — then asks you
+checks, each reporting what it found *and what to do about it*, then asks you
 whether the keyboard actually turned green, because software can't see your
-keyboard and those are genuinely different questions. Saves a full report to a
-text file.
+keyboard and those are different questions. Saves a full report to a text file.
 
 **Learns your keymap if the default is wrong.** A guided mode: press each key,
-and it records which scan code maps to which LED. Writes `keymap.json`; absent
-means the built-in verified table is used.
+and it records which scan code maps to which LED. Writes `keymap.json`. If that
+file is absent, the built-in verified table is used.
 
 **Live edits, explicit saves.** Moving a slider updates the keyboard instantly
 through a channel and never touches disk. Disk is written only when you click
@@ -108,12 +108,12 @@ Save. You can experiment freely and walk away without having changed anything.
 
 | What | Notes |
 |---|---|
-| Windows 10 or 11 | Windows-only by design — Win32 keyboard hook, tray, power broadcasts |
+| Windows 10 or 11 | Windows-only by design: Win32 keyboard hook, tray, power broadcasts |
 | A Glorious GMMK 3 100% ANSI | VID `504B`, PID `320F`, interface `MI_01` |
 | **Custom QMK firmware with OpenRGB Raw HID** | Non-negotiable. Stock firmware doesn't expose the protocol. |
 | Rust 1.85+ *(to build)* | Edition 2024. Not needed if you just run the prebuilt exe. |
 
-The keyboard must also **not** be in VIA mode (`Fn+O` toggles it) — the app
+The keyboard must also **not** be in VIA mode (`Fn+O` toggles it). The app
 detects VIA mode and refuses rather than misinterpreting its replies.
 
 ---
@@ -123,7 +123,7 @@ detects VIA mode and refuses rather than misinterpreting its replies.
 ### Just run it
 
 [Download `gmmk3_rgb.zip`](https://github.com/OscarOdh/GMMK3_RGB/raw/main/dist/gmmk3_rgb.zip),
-unzip it anywhere, and run `gmmk3_rgb.exe`. That's the whole install — no
+unzip it anywhere, and run `gmmk3_rgb.exe`. That's the whole install: no
 installer, no runtime to fetch, no registry keys.
 
 Keep `config.json` next to the exe; that's where your colours are saved.
@@ -136,20 +136,20 @@ cd GMMK3_RGB
 cargo build --release
 ```
 
-Then run it from **`dist\`** — the ready-to-go copy, exe plus config, and where
+Then run it from **`dist\`**, the ready-to-go copy of exe plus config, and where
 you should run it from.
 
 Keeping it outside `target\` matters: `config.json` lives next to the exe, so a
 build directory is the one place it must not be. `cargo clean` would take your
 settings with it.
 
-That clean is worth running when you're finished: `target\` reaches ~1.8 GB (about
-1.2 GB of it debug artifacts from `cargo build` and `cargo clippy`), against ~7 MB
-for the project without it. Only `dist\` needs keeping.
+That clean is worth running when you're finished. `target\` reaches ~1.8 GB
+(about 1.2 GB of it debug artifacts from `cargo build` and `cargo clippy`),
+against ~7 MB for the project without it. Only `dist\` needs keeping.
 
 ### If nothing lights up
 
-Run `gmmk3_rgb.exe --debug` before anything else — and read the next section
+Run `gmmk3_rgb.exe --debug` before anything else, and read the next section
 first, because most of the plausible explanations are wrong.
 
 ---
@@ -163,14 +163,14 @@ you are about to reintroduce a bug.
 
 | Natural assumption | Reality |
 | --- | --- |
-| `SET_MODE`'s mode byte follows the command | It is at **index 4**, behind hue/sat/value. Writing it at index 1 lands it in *hue* — the board changes colour while the effect never moves. |
+| `SET_MODE`'s mode byte follows the command | It is at **index 4**, behind hue/sat/value. Writing it at index 1 lands it in *hue*, so the board changes colour while the effect never moves. |
 | `GET_MODE_INFO` and `SET_MODE` share a field order | They **do not**. Get is `[cmd][mode][speed][hue][sat][val]`; set is `[cmd][hue][sat][val][mode][speed][save]`. Deriving one from the other is how the above bug survived four rounds. |
-| Direct mode is 0, or "the first mode" | It is **45**. `0` is `RGB_MATRIX_NONE`, which switches the board off — an easy false lead, because it looks like "the command worked but brightness is broken". |
+| Direct mode is 0, or "the first mode" | It is **45**. `0` is `RGB_MATRIX_NONE`, which switches the board off. An easy false lead, because it looks like "the command worked but brightness is broken". |
 | QMK Raw HID reports are 32 bytes (`RAW_EPSIZE`) | **This firmware uses 64.** Never hardcode it; it is read from the HID report descriptor at connect, and the app refuses to run rather than guess. |
 | Bulk `DIRECT_MODE_SET_LEDS` (0x09) is the efficient way to paint | It is **deliberately unused**. See [Why SET_LEDS is not used](#why-set_leds-is-not-used) before adding it back. |
 | The board has 124 LEDs | **125**, and indexes **113 and 123 are wired to nothing**. The original spec was wrong; `GET_DEVICE_INFO` reports 125 and the hardware agrees. |
 | LED 96 is Right Windows | It is **Fn**, handled inside QMK, and produces no scan code. It can never light reactively. |
-| Any RGB software can coexist | Windows lets several processes hold the same HID device. OpenRGB and this app will both write and neither wins — and any observation made while another is running is worthless. |
+| Any RGB software can coexist | Windows lets several processes hold the same HID device. OpenRGB and this app will both write and neither wins, and any observation made while another is running is worthless. |
 
 ### Platform
 
@@ -178,17 +178,18 @@ you are about to reintroduce a bug.
 | --- | --- |
 | `eframe::App` has `fn update(&mut self, ctx, frame)` | **Not in eframe 0.36.** The trait is `fn ui(&mut self, ui: &mut egui::Ui, frame)` plus `fn logic(&mut self, ctx, frame)`. `logic` runs even while the window is hidden; `ui` does not. That distinction is what makes hide-to-tray work. |
 | `ViewportBuilder::with_visible(false)` hides the window at launch | Not reliably. The first `logic` pass re-asserts it with `ViewportCommand::Visible(false)`. |
-| A message-only window can receive `WM_POWERBROADCAST` | It cannot — broadcasts skip `HWND_MESSAGE` windows. `input.rs` creates a real top-level window and simply never shows it. |
+| A message-only window can receive `WM_POWERBROADCAST` | It cannot. Broadcasts skip `HWND_MESSAGE` windows, so `input.rs` creates a real top-level window and simply never shows it. |
 | The tray can live on the main or input thread | It cannot. Showing its menu blocks that thread's message pump, and blocking the pump that owns the `WH_KEYBOARD_LL` hook stalls typing **system-wide**. |
 | `tray-icon`'s `common-controls-v6` feature is harmless | It makes muda import `TaskDialogIndirect`, which exists only in comctl32 v6. With no embedded manifest the loader binds v5.82 and the process dies before `main`. Do not enable it. |
-| `GetKeyState(VK_CAPITAL) & 1` gives the current Caps Lock state | Only on a thread that pulls keyboard messages — it answers from a per-thread snapshot that otherwise never refreshes. None of our threads qualify. The app reads it **once** at startup (a thread's first USER32 call snapshots the live system state) and the LL hook tracks toggles from then on. |
+| `GetKeyState(VK_CAPITAL) & 1` gives the current Caps Lock state | Only on a thread that pulls keyboard messages. It answers from a per-thread snapshot that otherwise never refreshes, and none of our threads qualify. The app reads it **once** at startup (a thread's first USER32 call snapshots the live system state) and the LL hook tracks toggles from then on. |
 
 ### Method
 
 These are the process traps, and they wasted more time than any code bug.
 
-- **"The write succeeded" ≠ "the LEDs changed."** Every write in this protocol
-  returns `Ok` whether or not it did anything. Only your eyes confirm painting.
+- **"The write succeeded" is not "the LEDs changed."** Every write in this
+  protocol returns `Ok` whether or not it did anything. Only your eyes confirm
+  painting.
 - **Setting the mode the keyboard is already in is indistinguishable from being
   ignored.** A test that "passed" this way hid a broken `SET_MODE` for days.
   Always verify a state change by moving to a value you are *not* already at.
@@ -218,8 +219,8 @@ main thread ──── eframe/winit event loop ──── gui.rs
 "tray"   thread ── tray icon + menu (own pump, may block on TrackPopupMenu)
 ```
 
-**Why four, in plain terms.** Windows delivers many things — the tray menu, the
-low-level keyboard hook, power notifications — through a per-thread *message
+**Why four, in plain terms.** Windows delivers a lot of things (the tray menu,
+the low-level keyboard hook, power notifications) through a per-thread *message
 pump*, a loop that pulls messages and dispatches them. A thread that blocks stops
 pumping. The tray menu blocks its thread for as long as it's open, which is fine
 on its own thread and catastrophic on the thread that owns the keyboard hook:
@@ -234,8 +235,8 @@ Data flow:
   `static Mutex<Option<Sender>>`, because the tray's event handler must be
   `Sync` and `Sender` is not.
 - **Hook → render**: plain atomics. The hook callback never allocates and never
-  locks — it must return well inside Windows' `LowLevelHooksTimeout` or the OS
-  silently removes it and input stutters globally.
+  locks, because it must return well inside Windows' `LowLevelHooksTimeout` or
+  the OS silently removes it and input stutters globally.
 - **Render → GUI**: `Arc<Mutex<render::Status>>`, written only on state changes,
   read ~4×/s while the window is visible.
 
@@ -243,7 +244,7 @@ Data flow:
 
 ## File guide
 
-### `main.rs` — entry, mode dispatch, wiring
+### `main.rs`: entry, mode dispatch, wiring
 
 The startup sequence, in order, and the order is deliberate.
 
@@ -253,24 +254,24 @@ config and keymap, spawns input and render threads, then hands off to eframe.
 The tray is spawned inside the app creator because `set_ui_ctx` needs the
 `egui::Context`.
 
-`#![windows_subsystem = "windows"]` at the top — no console window. It also
-means **`println!` goes nowhere**; use the diagnostics report or a file.
+`#![windows_subsystem = "windows"]` at the top means no console window. It also
+means **`println!` goes nowhere**, so use the diagnostics report or a file.
 
-### `protocol.rs` — the QMK OpenRGB wire format
+### `protocol.rs`: the QMK OpenRGB wire format
 
-The only file that touches `hidapi` — every USB byte in the program goes through
+The only file that touches `hidapi`. Every USB byte in the program goes through
 here. Contains the verified command layouts, the HID report-descriptor parser
 that measures packet size, and the VIA-vs-OpenRGB handshake.
 
 Special considerations:
 - `open()` refuses on three conditions before it will return a handle: a
   conflicting process, an unreadable report size, and VIA mode. All three are
-  fail-closed by design — it would rather not run than run wrong.
+  fail-closed by design, because it would rather not run than run wrong.
 - `set_direct_mode()` **verifies by read-back**. Do not simplify this to a
   fire-and-forget write.
 - `drain_input()` is called after writes so firmware replies cannot accumulate.
 
-### `render.rs` — the 60 FPS loop
+### `render.rs`: the 60 FPS loop
 
 Owns the `Keyboard`; nothing else may touch the USB handle. Builds a 125-LED
 frame, diffs it per LED against what the board is known to be showing, and
@@ -284,17 +285,17 @@ Special considerations:
 - A write failure backs off 3 s, and after 3 consecutive failures the loop
   **halts** and waits for `Msg::Reconnect`. Hammering a stalled endpoint is what
   makes keys stick.
-- Idle is genuinely idle: one atomic load (`LAST_PRESS_MS`) decides whether
+- Idle is genuinely idle. One atomic load (`LAST_PRESS_MS`) decides whether
   anything is decaying, so a still keyboard costs an array compare per tick.
 
-### `input.rs` — Win32 hook and power events
+### `input.rs`: Win32 hook and power events
 
 One thread, one message pump, two jobs: watch every keystroke system-wide, and
 listen for sleep/resume. Exposes everything through statics:
 `PRESS_MS[KEY_SLOTS]`, `LAST_PRESS_MS`, `LAST_KEY_ID`/`LAST_KEY_SEQ` (keymap
 learning), `CAPS_ON`, `SUSPENDED`, `RESUME_GRACE_UNTIL_MS`.
 
-Statics-and-atomics rather than channels or locks, because the hook callback runs
+Statics and atomics rather than channels or locks, because the hook callback runs
 on Windows' deadline and must not allocate or block.
 
 Caps Lock is *tracked*, not queried (see the platform table). The hook toggles
@@ -308,7 +309,7 @@ Special considerations:
 - On resume the app waits `RESUME_GRACE_MS` (3 s) before touching USB, because
   the bus has not finished re-enumerating.
 
-### `keymap.rs` — scan code ↔ LED index
+### `keymap.rs`: scan code ↔ LED index
 
 The translation table from "a key was pressed" to "which LED to flash."
 
@@ -320,13 +321,13 @@ and injected events can arrive with scan code 0. Hence `KEY_SLOTS = 0x300`.
 `DEFAULT_LED_TO_KEY` is verified against the hardware, not guessed. Key id `0`
 means "no key reaches Windows here" (LED 96, Fn).
 
-### `gui.rs` — the main window
+### `gui.rs`: the main window
 
 egui front end. Live edits go to the render thread immediately; disk is touched
 only on **Save**.
 
 Special considerations:
-- Hide-to-tray relies on `logic()` running while hidden — see the eframe 0.36
+- Hide-to-tray relies on `logic()` running while hidden. See the eframe 0.36
   note above.
 - `frames_since_show >= 2` gates close handling, because while hidden eframe
   replays the last shown frame's input and `close_requested` would read true
@@ -337,7 +338,7 @@ Special considerations:
   mode" button used to exist; it let a wrong value (mode 1) get saved, after
   which the app decided it was already configured and stopped trying to switch.
 
-### `debug.rs` — `--debug` diagnostics window
+### `debug.rs`: the `--debug` diagnostics window
 
 Plain-language checks with fixes, solid-colour buttons, a stress test, and a
 saveable report. Written for a non-expert.
@@ -347,35 +348,35 @@ toggles, mode sweeps and a raw hex sender all existed only while the protocol
 was unknown; they became noise and a way to wedge the keyboard. Resist adding
 them back.
 
-### `conflicts.rs` — rival RGB software detection
+### `conflicts.rs`: rival RGB software detection
 
 Toolhelp process scan for OpenRGB, Glorious Core, Artemis, SignalRGB, VIA, QMK
 Toolbox. `protocol::open()` refuses while any is running. This is a correctness
-feature, not politeness — shared HID access makes the lighting nondeterministic
+feature, not politeness. Shared HID access makes the lighting nondeterministic
 and makes debugging impossible.
 
-### `instance.rs` — single-instance guard
+### `instance.rs`: single-instance guard
 
 Session-local named mutex. A second launch posts `WM_APP+1` to the first
 instance's hidden power window (found by class name) and exits, so
 double-clicking the exe restores a tray-hidden window.
 
-### `tray.rs` — system tray
+### `tray.rs`: system tray
 
 Own thread, own pump. `UI_CTX` (a `OnceLock<egui::Context>`) lets both the tray
 and the power window wake the event loop via `request_show()`.
 
-### `config.rs` — settings and the LED map
+### `config.rs`: settings and the LED map
 
 `config.json` plus the zone constants. Read once at startup, written only on
 Save. Every field has a serde default, so a partial or missing file works.
 
-### `probe.rs` — `--probe` fallback
+### `probe.rs`: the `--probe` fallback
 
 Read-only, no window. Exists for the one case `--debug` cannot cover: a machine
 where the GUI will not start. Writes `probe.txt`.
 
-### `icon.rs` — procedural tray/window icon
+### `icon.rs`: procedural tray/window icon
 
 32×32 RGBA drawn in code so there is no asset file to ship.
 
@@ -410,17 +411,17 @@ board), mode 45, speed 127, **save 0** (never write EEPROM).
 ### Why SET_LEDS is not used
 
 `DIRECT_MODE_SET_LEDS` (0x09) takes a start index and a count. Which order was
-never settled — the firmware source said `[first][count]`, but sending that
+never settled. The firmware source said `[first][count]`, but sending that
 produced a one-byte colour shift, so this firmware's build differs from the PR.
 
 Getting it wrong is not cosmetic. With the bytes reversed, a packet starting at
-LED 40 declares a count of 40 — far more LEDs than a 64-byte packet holds. The
+LED 40 declares a count of 40, far more LEDs than a 64-byte packet holds. The
 firmware reads past the end, the endpoint stops draining, and because lighting
 and typing share one USB device, **key-up reports go missing and the last key
 pressed repeats until the keyboard is replugged.**
 
 `SET_SINGLE_LED` cannot overrun by construction, is confirmed correct, and for a
-reactive effect is genuinely the better fit: a decay touches a handful of LEDs,
+reactive effect is genuinely the better fit. A decay touches a handful of LEDs,
 so a tick costs a handful of writes and idle costs none. The bulk path is a
 performance answer to a problem this app does not have.
 
@@ -432,11 +433,11 @@ Established by lighting each index individually and looking.
 
 | LEDs | Zone |
 | --- | --- |
-| 0 – 103 | Main matrix |
-| 104 – 112 | Left underglow, 104 at the top |
-| **113** | **nothing — no LED wired** |
-| 114 – 122 | Right underglow, 114 at the **bottom** |
-| **123** | **nothing — no LED wired** |
+| 0-103 | Main matrix |
+| 104-112 | Left underglow, 104 at the top |
+| **113** | **nothing, no LED wired** |
+| 114-122 | Right underglow, 114 at the **bottom** |
+| **123** | **nothing, no LED wired** |
 | 124 | Knob accent |
 
 Main matrix order is row-major, left to right, top to bottom, with the nav
@@ -462,9 +463,9 @@ carrying stale bytes.
 Read once at startup; written only when **Save** is clicked. Moving a slider
 updates the keyboard live through the channel and never touches disk.
 
-The colours below are just the shipped defaults — one person's taste, nothing
+The colours below are just the shipped defaults, one person's taste and nothing
 structural. Every `zones` entry, `press_color` and the Caps Lock colour is a
-picker in the GUI; edit them there or in this file, whichever you prefer.
+picker in the GUI, so edit them there or in this file, whichever you prefer.
 
 ```json
 {
@@ -481,17 +482,17 @@ picker in the GUI; edit them there or in this file, whichever you prefer.
 }
 ```
 
-- `vid` / `pid` — optional hard filter, only needed with several QMK devices
+- `vid` / `pid`: optional hard filter, only needed with several QMK devices
   attached. `"0x320F"`, `"320F"` and `12815` all parse.
-- `packet_size` — `null` measures it from the HID report descriptor. Override
+- `packet_size`: `null` measures it from the HID report descriptor. Override
   only if that fails.
-- `direct_mode` — the firmware effect that hands the LEDs to the host. **45** on
+- `direct_mode`: the firmware effect that hands the LEDs to the host. **45** on
   this keyboard. `0` turns the board off.
-- `caps_lock_indicator` — while Caps Lock is on, the knob LED (124) shows
+- `caps_lock_indicator`: while Caps Lock is on, the knob LED (124) shows
   `color` instead of `knob_accent`. On by default. Not applied to the final
   frame at shutdown, since nothing would turn it back off afterwards.
 
-`keymap.json` is written only by **Learn keymap…**; absent means the built-in
+`keymap.json` is written only by **Learn keymap…**. If it's absent, the built-in
 table is used.
 
 ---
@@ -500,10 +501,10 @@ table is used.
 
 - Windows-only by design (Win32 hook, tray, power broadcasts).
 - `cargo clippy --all-targets -- -D warnings` is expected to pass clean.
-- Editing on the original author's machine: the Bash tool fails to fork; use
+- Editing on the original author's machine: the Bash tool fails to fork, so use
   PowerShell. Do **not** round-trip source through
-  `Get-Content | Set-Content` — it decodes as CP1252 and re-encodes as UTF-8,
-  silently mangling every non-ASCII character in the file.
+  `Get-Content | Set-Content`, because it decodes as CP1252 and re-encodes as
+  UTF-8, silently mangling every non-ASCII character in the file.
 
 ---
 
@@ -517,7 +518,7 @@ Press **Run checks**. Each step reports what it found *and what to do*:
 
 | Check | A failure means |
 | --- | --- |
-| Other RGB software | something else holds the connection — close it |
+| Other RGB software | something else holds the connection, so close it |
 | Keyboard found | not plugged in, or not running QMK with OpenRGB support |
 | Connect to keyboard | in VIA mode (`Fn+O`), or held by another program |
 | Lighting protocol | which protocol answered, and its version |
@@ -543,8 +544,8 @@ recover, then use the stress test in `--debug` to see whether it reproduces.
 
 ## Before you publish this repo
 
-No credentials or personal data here — `config.json` is just colors. Three small
-bits of local clutter to clear out:
+No credentials or personal data here. `config.json` is just colors. Three small
+bits of local clutter to clear out.
 
 **`sync.ffs_db`** is a hidden FreeFileSync database from your own backup setup.
 Machine-specific, no value to anyone else.
@@ -552,8 +553,8 @@ Machine-specific, no value to anyone else.
 **`.cargo.lnk`** is a Windows shortcut pointing at a path on your machine. It
 won't resolve anywhere else.
 
-**`target/`** isn't present right now, which is good — keep it that way. It
-reaches ~1.8 GB.
+**`target/`** isn't present right now, which is good. Keep it that way, because
+it reaches ~1.8 GB.
 
 **`dist/` currently ships the binary twice.** `gmmk3_rgb.exe` (6.5 MB) and
 `gmmk3_rgb.zip` (3 MB) are the same program, and the download link at the top of
@@ -562,14 +563,14 @@ carrying both makes each future release cost the repo roughly three times what i
 needs to. Keeping just the zip and `config.json`, and dropping the loose exe, is
 the tidier call.
 
-Committing a binary at all is a deliberate choice worth having made on purpose:
+Committing a binary at all is a deliberate choice worth having made on purpose.
 GitHub's convention is to attach it to a *Release*, which keeps it out of history
-entirely. The counter-argument is real here though — a direct download link in
-the README beats sending people to a Releases tab, and `dist\` is where
-`config.json` has to live regardless.
+entirely. The counter-argument is real here though: a direct download link in the
+README beats sending people to a Releases tab, and `dist\` is where `config.json`
+has to live regardless.
 
-`Cargo.lock` **should** stay committed — this is a binary, not a library, and the
-lock file is what makes a build reproducible.
+`Cargo.lock` **should** stay committed, because this is a binary rather than a
+library, and the lock file is what makes a build reproducible.
 
 Suggested `.gitignore`:
 
@@ -586,10 +587,10 @@ keymap.json
 
 ## Deliberately not done
 
-- **Bulk `SET_LEDS`** — see above.
-- **A GUI control for `direct_mode`** — a wrong value silently disables the
-  whole mode switch. `config.json` only.
-- **Layer-aware knob colour** — possible but needs firmware work, since Fn never
+- **Bulk `SET_LEDS`.** See above.
+- **A GUI control for `direct_mode`.** A wrong value silently disables the whole
+  mode switch, so `config.json` only.
+- **Layer-aware knob colour.** Possible but needs firmware work, since Fn never
   reaches the host. Either a QMK `rgb_matrix_indicators_advanced_user()` hook
   that paints LED 124 itself (simplest), or firmware sending layer changes over
   Raw HID with a tag outside the OpenRGB command range for the app to read.
