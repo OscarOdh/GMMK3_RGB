@@ -1,559 +1,350 @@
-# GMMK3 RGB
+# OctoCopy
 
-**Your keys sit at whatever color you pick. Press one and it flashes a second
-color, then fades back. One 6 MB exe, no service, no launcher, no account.**
+**Eight clipboards instead of one. Summon it from anywhere with `Ctrl + Alt + C`.**
 
-A lightweight standalone lighting controller for a **Glorious GMMK 3 100% ANSI** running
-custom QMK firmware with the OpenRGB Raw HID protocol. Four threads, written in
-Rust.
+A tiny Windows tray app that holds up to 8 pieces of text at once, so you can
+paste any of them instantly without going back to hunt for the original.
 
-Caps Lock indicated via top right LED near knob.
+<img src="docs/octocopy.png" width="420"
+     alt="The OctoCopy window in dark mode: eight rows, each a Copy button beside
+     a text box holding a snippet, with Add, Remove and Clear All along the top
+     and an Options and Help menu bar.">
 
-<img src="docs/GMMK3RGB.png" width="420"
-     alt="The GMMK3 RGB control window: live device status showing the detected
-     keyboard, protocol version, packet size and frames sent; colour pickers for
-     the four LED zones with their index ranges; a Caps Lock indicator toggle;
-     the reactive press colour and fade-back slider; and keymap learning.">
+### ⬇ [**Download OctoCopy.exe**](https://github.com/OscarOdh/OctoCopy/raw/main/OctoCopy.exe) · 95 KB
 
-### ⬇ [**Download gmmk3_rgb.zip**](https://github.com/OscarOdh/GMMK3_RGB/raw/main/dist/gmmk3_rgb.zip) · 3 MB
+Double-click it and you're running. No installer, no dependencies, nothing to
+configure. Works on any up-to-date Windows 10 or 11.
 
-Unzip anywhere and run `gmmk3_rgb.exe`. No installer, no dependencies, nothing
-to configure. It starts lighting the keyboard immediately.
-
-⚠️ Requires the keyboard to be running **custom QMK firmware with OpenRGB Raw
-HID**. It will not talk to stock Glorious firmware. See [Requirements](#requirements).
+The exe isn't code-signed, so Windows SmartScreen will show a blue
+"Windows protected your PC" box the first time. Click **More info**, then
+**Run anyway**. Or build it yourself from source below.
 
 ---
 
 ## What problem does this solve?
 
-Keyboard RGB software has a reputation, and it's earned. The typical vendor app
-is a few hundred megabytes, installs a background service and a launcher and an
-updater, wants an account, phones home, and consumes measurable CPU to animate
-some LEDs. OpenRGB is a huge improvement but it's a general-purpose tool for
-hundreds of devices, which means a lot of abstraction between you and the one
-keyboard you actually own.
+Windows gives you exactly one clipboard. Copy something new and the old thing is
+gone. That's fine until you're doing the kind of work where you need four or five
+pieces of text over and over: filling in a form with the same address, ticket
+number and account ID, writing a report that keeps citing the same three figures,
+testing a login with the same credentials fifty times.
 
-This is the opposite approach: a single executable that does exactly one thing
-for exactly one keyboard, with the protocol details verified against the hardware
-rather than inferred from a spec.
+The usual workaround is a scratch Notepad window you keep alt-tabbing to, select
+from, copy from, and alt-tab back. That's four actions per paste.
 
-**Why write it at all, when the keyboard has onboard effects?** Because
-reactive-typing effects that live in the firmware can't be tuned, and the ones
-that can be tuned need software anyway. This does the effect on the host. The app
-computes each frame, works out which of 125 LEDs actually changed, and sends only
-those. When you stop typing it stops sending. A still keyboard costs one atomic
-read and an array compare per tick.
+OctoCopy makes it one. Put your snippets in once, then press `Ctrl + Z` (or `X`,
+`C`, `V`, `A`, `S`, `D`, `F`) to load any of them into your clipboard. The app
+doesn't need to be focused for the summon hotkey, doesn't need a save button, and
+lives in the system tray where it costs you no screen space.
 
-**Why Rust?** Because the hard parts of this are a low-level keyboard hook that
-must return in microseconds or Windows drops it, and a USB endpoint that stalls if
-you burst writes at it. Both are places where a garbage-collection pause or a
-surprise allocation shows up as your keyboard stuttering.
-
-> **Important prerequisite:** this requires the keyboard to be running **custom
-> QMK firmware with OpenRGB Raw HID support**. It will not talk to stock Glorious
-> firmware. That's the trade: you flash the keyboard once, and afterwards you own
-> the lighting stack completely.
+It is not a clipboard *history* tool, on purpose. Nothing is captured
+automatically, nothing is logged in the background. You decide what goes in the
+eight slots, and that's all it ever holds.
 
 ---
 
 ## Features
 
-**Reactive typing, done on the host.** Keys sit at your chosen base color, and
-each keypress flashes its LED and fades back over a configurable duration.
-Because the fade is computed here rather than in firmware, the color and the
-timing are both just sliders.
+**Summon from anywhere.** `Ctrl + Alt + C` pulls OctoCopy to the front from any
+application, whether it's minimized, hidden in the tray, or buried behind twelve
+windows. `Escape` sends it straight back.
 
-**60 FPS that costs nothing when idle.** The render loop diffs each frame against
-what the board is already showing and writes only the differences, capped at 24
-LED writes per tick so a full repaint spreads over several frames instead of
-flooding the USB endpoint. Nothing changing means nothing sent.
+**Copy without clicking.** `Ctrl + Z / X / C / V / A / S / D / F` copies slot 1
+through 8. The letters are the left-hand keyboard cluster, so your hand never
+moves. And because "which letter was slot 5 again?" is a real problem, **holding
+`Ctrl` turns every Copy button into its own shortcut letter.** Let go and they
+turn back. The app teaches you its shortcuts while you use it.
 
-**Independent zones.** The main key matrix, the left underglow bar, the right
-underglow bar and the knob accent are four separate colors. A dim warm white
-spill under a cool matrix, or each bar its own shade, or all four the same.
-Whatever you pick is a colour picker away.
+**Never lose your text.** There is no Save button because there's nothing to
+save. Stop typing for 800ms and your snippets are written to disk. Toggle a
+setting, close the window, reboot, and it's all still there.
 
-**Caps Lock you can see.** While Caps Lock is on, the knob LED changes color.
-Tracked properly, too. See the note about `GetKeyState` below, which is the kind
-of thing that looks trivial and isn't.
+**Copy straight from the tray.** Click the tray icon and the menu lists your
+snippets by their first 40 characters. Click one to copy it. You never have to
+open the main window at all.
 
-**Lives in the tray.** Close the window and it keeps running. Launch the exe
-again and instead of starting a second copy, it tells the running one to show
-itself. Optionally starts hidden.
+**Visible confirmation.** The button you copied from flashes green with a `✓` for
+half a second, including when you triggered it with a keyboard shortcut and
+weren't looking at the button. You always know the copy landed.
 
-**Sleep and resume survive.** The app listens for Windows power broadcasts and
-waits 3 seconds after resume before touching USB, because the bus hasn't finished
-re-enumerating yet. Reconnects cleanly instead of coming back dead.
+**Get out of the way automatically.** Turn on *Minimize to tray after copy* and
+the window hides itself one second after a shortcut copy, so you can paste into
+whatever you were doing without a window in the way.
 
-**It refuses to fight other software.** If OpenRGB, Glorious Core, SignalRGB,
-Artemis, VIA or QMK Toolbox is running, it declines to connect and tells you
-which one. Windows lets several processes hold the same HID device, and when two
-both write, the lighting is nondeterministic and debugging becomes impossible.
-This is a correctness feature, not politeness.
+**A real dark mode.** Not just repainted controls. The actual Windows title bar
+goes dark too, and on Windows 11 it's color-matched to the app's own background
+so there's no visible seam between the frame and the window.
 
-**A diagnostics mode written for a human.** `--debug` runs seven plain-language
-checks, each reporting what it found *and what to do about it*, then asks you
-whether the keyboard actually turned green, because software can't see your
-keyboard and those are different questions. Saves a full report to a text file.
+**See-through mode.** An opacity slider down to 20%, for reading a reference
+document through the app while you work.
 
-**Learns your keymap if the default is wrong.** A guided mode: press each key,
-and it records which scan code maps to which LED. Writes `keymap.json`. If that
-file is absent, the built-in verified table is used.
+**Remembers where you put it.** Window position survives reboots, with a
+multi-monitor safety check: if you had it on a second screen that's now
+unplugged, it won't open off-screen where you can't reach it.
 
-**Live edits, explicit saves.** Moving a slider updates the keyboard instantly
-through a channel and never touches disk. Disk is written only when you click
-Save. You can experiment freely and walk away without having changed anything.
+**Sizes itself to its contents.** Two to eight rows, and the window grows and
+shrinks to match. No wasted empty space.
 
-**No console window, no installer, no dependencies.** One exe plus a
-`config.json`. Copy the folder anywhere.
+**One instance, always.** Launching it twice just tells you it's already running
+and points at the tray, instead of starting a second copy that fights the first
+over the same save file and the same global hotkey.
 
 ---
 
 ## Requirements
 
-| What | Notes |
+- **Windows** (Windows 10 or 11. The dark title bar needs Windows 10 1809 or
+  later, and degrades gracefully on older builds.)
+- **.NET Framework 4.8**, already present on any up-to-date Windows 10/11
+  install. Nothing to download for end users.
+
+To build it yourself: **Visual Studio 2019+** with the .NET desktop development
+workload, or MSBuild from the .NET Framework Developer Pack.
+
+---
+
+## Getting it running
+
+### Just use it
+
+[Download `OctoCopy.exe`](https://github.com/OscarOdh/OctoCopy/raw/main/OctoCopy.exe)
+and double-click it. That's the entire install: no installer, no registry keys,
+no dependencies. Settings go in `%APPDATA%\OctoCopy\`, which is the only thing it
+writes outside itself.
+
+To uninstall, delete the exe, and delete `%APPDATA%\OctoCopy\` if you want your
+snippets gone too.
+
+### Build from source
+
+```bash
+git clone https://github.com/OscarOdh/OctoCopy.git
+```
+
+Open `App.sln` in Visual Studio and press F5. Or from a Developer Command Prompt:
+
+```bash
+msbuild App.csproj /p:Configuration=Release
+```
+
+The output is `bin\Release\App.exe`. Note the assembly is named `App`, not
+`OctoCopy`. The shipped `OctoCopy.exe` is that file renamed. If you want the
+build to produce the right name directly, change `<AssemblyName>` in
+`App.csproj`.
+
+### Start it with Windows
+
+There's no built-in setting for this. Press `Win + R`, type `shell:startup`, and
+drop a shortcut to the exe in the folder that opens.
+
+---
+
+## How it works, file by file
+
+### `Program.cs`, the entry point and single-instance guard
+
+Fourteen lines that do one important thing. Before the window is created, it
+tries to acquire a named `Mutex`, a system-wide lock identified by a GUID.
+
+If it gets the lock, it's the first instance and starts normally. If it doesn't,
+another OctoCopy is already running, so it shows a message pointing at the tray
+and exits immediately.
+
+This matters more than it looks. Two instances would both try to write the same
+JSON settings file, corrupting it, and both try to register the same global
+hotkey. Windows gives `Ctrl + Alt + C` to exactly one process, so the second one
+silently wouldn't work, which is a maddening bug to diagnose.
+
+### `Form1.cs`, essentially the whole application
+
+One file, about 800 lines. Here's what's in it, by concern.
+
+#### Building the UI at runtime
+
+The snippet rows aren't in the designer. They're created in code by
+`AddSnippetRow()`, which builds a `TextBox` and a `Button`, positions the row at
+`index * 29` pixels down, and drops both into a scrolling `Panel`.
+
+Each button stores its own row number in its `.Tag` property. That's the trick
+that lets all eight buttons share one `DynamicCopy_Click` handler: the handler
+reads `.Tag` off whichever button fired, and uses it to index into the textbox
+list. Eight controls, one handler, no duplicated code.
+
+`AdjustFormHeight()` recalculates the window height every time a row is added or
+removed: `rows × 29 + 10`, plus 64 pixels of fixed overhead for the menu bar and
+buttons.
+
+There's a subtle layout bug this code fixes. When the panel gets a vertical
+scrollbar, its usable width shrinks, and every textbox suddenly runs under the
+scrollbar. So the panel's `Resize` event recalculates all textbox widths from
+`snippetPanel.ClientSize.Width`, which already excludes the scrollbar. Edges stay
+clean whether the bar is there or not.
+
+`AddSnippetRow()` also saves and restores the panel's scroll position around the
+insert, because adding a control to a scrolled panel makes WinForms compute the
+new control's position against the scrolled origin and place it in the wrong
+spot.
+
+#### Saving, without a save button
+
+`SaveData()` collects everything (the eight snippet strings, every menu toggle,
+the opacity level, and the window's X/Y coordinates) into an `AppSettings`
+object, serializes it with `JavaScriptSerializer`, and writes it to
+`%APPDATA%\OctoCopy\OctoCopy_Data.json`.
+
+What makes it feel invisible is **debouncing**. Every keystroke in any textbox
+stops an 800ms timer and immediately restarts it. So while you're typing, the
+save keeps getting pushed back. Stop for 800ms and it fires once. You get
+save-on-every-change reliability with one disk write per edit instead of one per
+keystroke.
+
+`Form1_Load()` has migration logic for an older save format. Early versions
+stored a bare JSON array of strings; the current one stores an object. The loader
+peeks at the first character (a `[` means the old format) and reads it the old
+way, so upgrading never loses anyone's snippets.
+
+Window position restore has a guard worth calling out. Before using a saved
+position, it loops over `Screen.AllScreens` and checks whether the saved
+rectangle actually intersects a working area. If you saved the position on a
+second monitor that's now unplugged, the app would otherwise open at coordinates
+that don't exist on any display: invisible, unreachable, and apparently broken.
+No intersection means it falls back to the default position.
+
+#### The clipboard and the green flash
+
+`Clipboard.SetText()` does the copy. An empty slot calls `Clipboard.Clear()`
+instead, so "copying" an empty box gives you empty rather than silently leaving
+the previous contents in place.
+
+`TriggerVisualFeedback()` is declared `async void`. It sets the button green with
+a `✓`, then `await Task.Delay(500)`, then restores it. The `await` is what makes
+this work: it yields control back to the UI thread instead of blocking it. A
+`Thread.Sleep(500)` here would freeze the entire window for half a second every
+copy. It also checks `IsDisposed` before restoring, in case you removed that row
+during the delay.
+
+#### Keyboard handling, three different mechanisms
+
+Three distinct problems, three different Windows mechanisms.
+
+**The global hotkey (`Ctrl + Alt + C`)** has to work when OctoCopy isn't focused,
+which normal .NET events can't do. So it calls into Windows directly with
+P/Invoke. `RegisterHotKey` from `user32.dll` claims the combination system-wide,
+and the form overrides `WndProc` (the raw Windows message handler) to watch for
+`WM_HOTKEY`, message `0x0312`. When it arrives, the window shows, activates, and
+comes to the front. `UnregisterHotKey` releases the claim on close, so the
+combination isn't held hostage after the app exits.
+
+**The local shortcuts (`Ctrl + Z/X/C/V/A/S/D/F`)** are handled by overriding
+`ProcessCmdKey`, which sees keystrokes before any control does. That's necessary
+because `Ctrl + C` and `Ctrl + V` already mean something inside a textbox.
+`ProcessCmdKey` intercepts them first and returns `true` to stop them going
+further. `Escape` is handled here too, hiding the window to the tray.
+
+**The Ctrl-held letter hints** use `OnKeyDown` / `OnKeyUp` with the form's
+`KeyPreview` set to `true`, so the form sees keys even while a textbox has focus.
+A `ctrlHeld` flag gates `UpdateCopyButtonTexts()`, which swaps every button's
+caption between `Copy` and its shortcut letter. `OnDeactivate` resets the flag as
+well, because otherwise alt-tabbing away while holding Ctrl would leave the
+buttons stuck showing letters forever, since the key-up event goes to whatever
+window you switched to.
+
+#### The system tray
+
+A `NotifyIcon` with a `ContextMenuStrip`. The menu is rebuilt from scratch every
+time it opens, in the `Opening` event, so it always reflects the current
+snippets. Text is stripped of line breaks and truncated to 40 characters, and
+each item gets a closure capturing its own text to copy.
+
+Left-clicking a tray icon doesn't normally open its context menu; only
+right-click does. There's no public API for it, so the code uses **reflection**
+to find and call `NotifyIcon`'s private `ShowContextMenu` method. It's a hack,
+and it's guarded with `?.Invoke` so a future .NET change that renames the method
+degrades to "left-click does nothing" rather than crashing.
+
+`Form1_FormClosing` intercepts the X button. If *Minimize to tray on close* is
+on, it sets `e.Cancel = true`, vetoing the close, then saves, hides the window,
+and shows the tray icon. The app keeps running with its hotkey registered. It
+checks `CloseReason.UserClosing` first, so a Windows shutdown or a tray-menu Exit
+still closes properly instead of blocking the shutdown.
+
+#### Dark mode, including the title bar
+
+Repainting controls is easy. The title bar isn't. It's drawn by Windows, not by
+your app, and WinForms has no property for it.
+
+`SetTitleBarTheme()` calls `DwmSetWindowAttribute` from `dwmapi.dll` (the Desktop
+Window Manager, the part of Windows that composites window frames) and sets:
+
+- `DWMWA_USE_IMMERSIVE_DARK_MODE` (attribute 20), plus attribute 19 as a
+  fallback. The constant changed between Windows 10 builds, so it sets both and
+  lets the one that isn't recognised fail harmlessly.
+- `DWMWA_CAPTION_COLOR` (35) to `0x00121212` and `DWMWA_TEXT_COLOR` (36) to
+  white. These are Windows 11 only, and this is what produces the seamless look:
+  the title bar is set to the *exact* same hex as the app background, so there's
+  no visible boundary at all.
+
+Then `SetWindowPos` with `SWP_FRAMECHANGED` forces the frame to redraw so the
+change appears immediately rather than on the next resize. The whole thing is
+wrapped in a `try/catch` that swallows failures, so older Windows versions just
+get a normal light title bar instead of an exception.
+
+`ApplyTheme()` handles everything inside the window, walking every dynamic
+control. It has one carve-out: it never recolors a button that's currently
+`LightGreen`, so toggling dark mode mid-flash doesn't leave a button stuck green.
+
+#### The help window
+
+Built in memory rather than shown as a `MessageBox`, because a `MessageBox` can't
+be styled, can't be dark, and can't have bold headings. So `btnHelp_Click`
+constructs a `Form` containing a `FlowLayoutPanel`, and a local `AddSection`
+function adds a bold `Label` and a regular one per topic.
+
+Two details that were clearly bugs once. The help form inherits the main window's
+`TopMost` value, so an always-on-top OctoCopy can't hide its own help window
+behind itself. And it forces native handle creation (`IntPtr h = helpForm.Handle`)
+before applying the dark title bar, because `DwmSetWindowAttribute` needs a real
+window handle and WinForms creates one lazily.
+
+### `Form1.Designer.cs`, the static layout
+
+Designer-generated. Holds only the parts that never change: the menu strip
+(Options → Always On Top / Minimize to tray on close / Minimize to tray after
+copy / Opacity / Dark Mode, plus Help), the `+ Add` / `- Remove` / `Clear All`
+buttons, and the scrolling panel the snippet rows get injected into.
+
+### `AppSettings` (at the bottom of `Form1.cs`), the save format
+
+A plain data class: the snippet array, four boolean toggles, the opacity double,
+and nullable window coordinates. `WindowLocationX/Y` are nullable so that "never
+saved a position" is distinguishable from "saved position 0,0".
+
+### Supporting files
+
+| File | What it is |
 |---|---|
-| Windows 10 or 11 | Windows-only by design: Win32 keyboard hook, tray, power broadcasts |
-| A Glorious GMMK 3 100% ANSI | VID `504B`, PID `320F`, interface `MI_01` |
-| **Custom QMK firmware with OpenRGB Raw HID** | Non-negotiable. Stock firmware doesn't expose the protocol. |
-| Rust 1.85+ *(to build)* | Edition 2024. Not needed if you just run the prebuilt exe. |
-
-The keyboard must also **not** be in VIA mode (`Fn+O` toggles it). The app
-detects VIA mode and refuses rather than misinterpreting its replies.
-
----
-
-## Quick start
-
-### Just run it
-
-[Download `gmmk3_rgb.zip`](https://github.com/OscarOdh/GMMK3_RGB/raw/main/dist/gmmk3_rgb.zip),
-unzip it anywhere, and run `gmmk3_rgb.exe`. That's the whole install: no
-installer, no runtime to fetch, no registry keys.
-
-Keep `config.json` next to the exe; that's where your colours are saved.
-
-### Or build it yourself
-
-```bash
-git clone https://github.com/OscarOdh/GMMK3_RGB.git
-cd GMMK3_RGB
-cargo build --release
-```
-
-Then run it from **`dist\`**, the ready-to-go copy of exe plus config, and where
-you should run it from.
-
-Keeping it outside `target\` matters: `config.json` lives next to the exe, so a
-build directory is the one place it must not be. `cargo clean` would take your
-settings with it.
-
-That clean is worth running when you're finished. `target\` reaches ~1.8 GB
-(about 1.2 GB of it debug artifacts from `cargo build` and `cargo clippy`),
-against ~7 MB for the project without it. Only `dist\` needs keeping.
-
-### If nothing lights up
-
-Run `gmmk3_rgb.exe --debug` before anything else, and read the next section
-first, because most of the plausible explanations are wrong.
+| `App.sln` / `App.csproj` | Visual Studio solution and project. Targets .NET Framework 4.8, `WinExe` output. |
+| `Properties\AssemblyInfo.cs` | Version and metadata baked into the exe. |
+| `Properties\Resources.resx` | Embedded resources. |
+| `Form1.resx` | The window icon, embedded as base64, which is why `Form1.resx` is 54 KB. |
+| `c.ico` | The source icon file. |
+| `OctoCopy.exe` | Prebuilt release binary. What the download link at the top points at. |
 
 ---
 
-## Read this first: assumptions that are wrong
-
-Every line below cost real debugging. If you are about to "fix" one of these,
-you are about to reintroduce a bug.
-
-### Protocol
-
-| Natural assumption | Reality |
-| --- | --- |
-| `SET_MODE`'s mode byte follows the command | It is at **index 4**, behind hue/sat/value. Writing it at index 1 lands it in *hue*, so the board changes colour while the effect never moves. |
-| `GET_MODE_INFO` and `SET_MODE` share a field order | They **do not**. Get is `[cmd][mode][speed][hue][sat][val]`; set is `[cmd][hue][sat][val][mode][speed][save]`. Deriving one from the other is how the above bug survived four rounds. |
-| Direct mode is 0, or "the first mode" | It is **45**. `0` is `RGB_MATRIX_NONE`, which switches the board off. An easy false lead, because it looks like "the command worked but brightness is broken". |
-| QMK Raw HID reports are 32 bytes (`RAW_EPSIZE`) | **This firmware uses 64.** Never hardcode it; it is read from the HID report descriptor at connect, and the app refuses to run rather than guess. |
-| Bulk `DIRECT_MODE_SET_LEDS` (0x09) is the efficient way to paint | It is **deliberately unused**. See [Why SET_LEDS is not used](#why-set_leds-is-not-used) before adding it back. |
-| The board has 124 LEDs | **125**, and indexes **113 and 123 are wired to nothing**. The original spec was wrong; `GET_DEVICE_INFO` reports 125 and the hardware agrees. |
-| LED 96 is Right Windows | It is **Fn**, handled inside QMK, and produces no scan code. It can never light reactively. |
-| Any RGB software can coexist | Windows lets several processes hold the same HID device. OpenRGB and this app will both write and neither wins, and any observation made while another is running is worthless. |
-
-### Platform
-
-| Natural assumption | Reality |
-| --- | --- |
-| `eframe::App` has `fn update(&mut self, ctx, frame)` | **Not in eframe 0.36.** The trait is `fn ui(&mut self, ui: &mut egui::Ui, frame)` plus `fn logic(&mut self, ctx, frame)`. `logic` runs even while the window is hidden; `ui` does not. That distinction is what makes hide-to-tray work. |
-| `ViewportBuilder::with_visible(false)` hides the window at launch | Not reliably. The first `logic` pass re-asserts it with `ViewportCommand::Visible(false)`. |
-| A message-only window can receive `WM_POWERBROADCAST` | It cannot. Broadcasts skip `HWND_MESSAGE` windows, so `input.rs` creates a real top-level window and simply never shows it. |
-| The tray can live on the main or input thread | It cannot. Showing its menu blocks that thread's message pump, and blocking the pump that owns the `WH_KEYBOARD_LL` hook stalls typing **system-wide**. |
-| `tray-icon`'s `common-controls-v6` feature is harmless | It makes muda import `TaskDialogIndirect`, which exists only in comctl32 v6. With no embedded manifest the loader binds v5.82 and the process dies before `main`. Do not enable it. |
-| `GetKeyState(VK_CAPITAL) & 1` gives the current Caps Lock state | Only on a thread that pulls keyboard messages. It answers from a per-thread snapshot that otherwise never refreshes, and none of our threads qualify. The app reads it **once** at startup (a thread's first USER32 call snapshots the live system state) and the LL hook tracks toggles from then on. |
-
-### Method
-
-These are the process traps, and they wasted more time than any code bug.
-
-- **"The write succeeded" is not "the LEDs changed."** Every write in this
-  protocol returns `Ok` whether or not it did anything. Only your eyes confirm
-  painting.
-- **Setting the mode the keyboard is already in is indistinguishable from being
-  ignored.** A test that "passed" this way hid a broken `SET_MODE` for days.
-  Always verify a state change by moving to a value you are *not* already at.
-- **Close other RGB software before believing anything.** A red LED "proving"
-  a command worked was OpenRGB doing it in the background.
-- **Read the firmware source; do not infer the protocol.** Three separate wrong
-  conclusions came from reasoning about byte layouts that were a search away.
-  The layouts documented here came from
-  [QMK OpenRGB PR #13036](https://github.com/qmk/qmk_firmware/pull/13036).
-
----
-
-## Architecture
-
-Four threads. The split is driven by Win32 message-pump constraints, not by
-taste.
-
-```
-main thread ──── eframe/winit event loop ──── gui.rs
-                     │  egui::Context (clonable, Send+Sync)
-                     ▼
-"input"  thread ── WH_KEYBOARD_LL hook + hidden power window (own pump)
-                     │  atomics only: PRESS_MS[], LAST_PRESS_MS, SUSPENDED…
-                     ▼
-"render" thread ── owns the HidDevice, 60 FPS loop ──── protocol.rs
-                     ▲
-"tray"   thread ── tray icon + menu (own pump, may block on TrackPopupMenu)
-```
-
-**Why four, in plain terms.** Windows delivers a lot of things (the tray menu,
-the low-level keyboard hook, power notifications) through a per-thread *message
-pump*, a loop that pulls messages and dispatches them. A thread that blocks stops
-pumping. The tray menu blocks its thread for as long as it's open, which is fine
-on its own thread and catastrophic on the thread that owns the keyboard hook:
-Windows gives a hook callback a deadline (`LowLevelHooksTimeout`) and silently
-removes the hook if it's missed, which shows up as typing stuttering
-*system-wide*. So the tray gets its own thread, the hook gets its own thread, USB
-gets its own thread, and the GUI keeps the main one.
-
-Data flow:
-
-- **GUI → render**: `mpsc::Sender<render::Msg>` behind a
-  `static Mutex<Option<Sender>>`, because the tray's event handler must be
-  `Sync` and `Sender` is not.
-- **Hook → render**: plain atomics. The hook callback never allocates and never
-  locks, because it must return well inside Windows' `LowLevelHooksTimeout` or
-  the OS silently removes it and input stutters globally.
-- **Render → GUI**: `Arc<Mutex<render::Status>>`, written only on state changes,
-  read ~4×/s while the window is visible.
-
----
-
-## File guide
-
-### `main.rs`: entry, mode dispatch, wiring
-
-The startup sequence, in order, and the order is deliberate.
-
-Handles `--probe` and `--debug` *before* the single-instance guard, so
-diagnostics run while the main app is up. Acquires the instance mutex, loads
-config and keymap, spawns input and render threads, then hands off to eframe.
-The tray is spawned inside the app creator because `set_ui_ctx` needs the
-`egui::Context`.
-
-`#![windows_subsystem = "windows"]` at the top means no console window. It also
-means **`println!` goes nowhere**, so use the diagnostics report or a file.
-
-### `protocol.rs`: the QMK OpenRGB wire format
-
-The only file that touches `hidapi`. Every USB byte in the program goes through
-here. Contains the verified command layouts, the HID report-descriptor parser
-that measures packet size, and the VIA-vs-OpenRGB handshake.
-
-Special considerations:
-- `open()` refuses on three conditions before it will return a handle: a
-  conflicting process, an unreadable report size, and VIA mode. All three are
-  fail-closed by design, because it would rather not run than run wrong.
-- `set_direct_mode()` **verifies by read-back**. Do not simplify this to a
-  fire-and-forget write.
-- `drain_input()` is called after writes so firmware replies cannot accumulate.
-
-### `render.rs`: the 60 FPS loop
-
-Owns the `Keyboard`; nothing else may touch the USB handle. Builds a 125-LED
-frame, diffs it per LED against what the board is known to be showing, and
-writes only the differences via `SET_SINGLE_LED`, capped at
-`MAX_WRITES_PER_TICK` (24) so a full 125-LED repaint spreads over several ticks
-instead of bursting.
-
-Special considerations:
-- **The write budget and the rolling `cursor` are not premature optimisation.**
-  Bursting writes at this device is what stalls its endpoint.
-- A write failure backs off 3 s, and after 3 consecutive failures the loop
-  **halts** and waits for `Msg::Reconnect`. Hammering a stalled endpoint is what
-  makes keys stick.
-- Idle is genuinely idle. One atomic load (`LAST_PRESS_MS`) decides whether
-  anything is decaying, so a still keyboard costs an array compare per tick.
-
-### `input.rs`: Win32 hook and power events
-
-One thread, one message pump, two jobs: watch every keystroke system-wide, and
-listen for sleep/resume. Exposes everything through statics:
-`PRESS_MS[KEY_SLOTS]`, `LAST_PRESS_MS`, `LAST_KEY_ID`/`LAST_KEY_SEQ` (keymap
-learning), `CAPS_ON`, `SUSPENDED`, `RESUME_GRACE_UNTIL_MS`.
-
-Statics and atomics rather than channels or locks, because the hook callback runs
-on Windows' deadline and must not allocate or block.
-
-Caps Lock is *tracked*, not queried (see the platform table). The hook toggles
-`CAPS_ON` on the `VK_CAPITAL` key-down transition and uses a `CAPS_HELD` flag to
-ignore typematic repeats, since Windows toggles on the transition only.
-`seed_caps_lock()` captures the initial state at startup.
-
-Special considerations:
-- `now_ms()` returns elapsed + 1, so **0 is a valid "never pressed" sentinel**.
-- The hidden window's class name is also how `instance.rs` finds a running copy.
-- On resume the app waits `RESUME_GRACE_MS` (3 s) before touching USB, because
-  the bus has not finished re-enumerating.
-
-### `keymap.rs`: scan code ↔ LED index
-
-The translation table from "a key was pressed" to "which LED to flash."
-
-Keys are identified by **PS/2 set-1 scan code + extended flag**, not virtual key
-code: VK changes with Num Lock and layout, scan codes do not. Two cases need a
-synthetic id (`0x200 | vk`): Pause/Break shares scan code `0x45` with Num Lock,
-and injected events can arrive with scan code 0. Hence `KEY_SLOTS = 0x300`.
-
-`DEFAULT_LED_TO_KEY` is verified against the hardware, not guessed. Key id `0`
-means "no key reaches Windows here" (LED 96, Fn).
-
-### `gui.rs`: the main window
-
-egui front end. Live edits go to the render thread immediately; disk is touched
-only on **Save**.
-
-Special considerations:
-- Hide-to-tray relies on `logic()` running while hidden. See the eframe 0.36
-  note above.
-- `frames_since_show >= 2` gates close handling, because while hidden eframe
-  replays the last shown frame's input and `close_requested` would read true
-  forever.
-- `raw_input_hook` strips key events during keymap learning so pressing Space
-  does not activate a focused button.
-- There is **no direct-mode control here on purpose.** An "adopt the current
-  mode" button used to exist; it let a wrong value (mode 1) get saved, after
-  which the app decided it was already configured and stopped trying to switch.
-
-### `debug.rs`: the `--debug` diagnostics window
-
-Plain-language checks with fixes, solid-colour buttons, a stress test, and a
-saveable report. Written for a non-expert.
-
-It is **not** a protocol workbench any more. Payload-shape pickers, header-order
-toggles, mode sweeps and a raw hex sender all existed only while the protocol
-was unknown; they became noise and a way to wedge the keyboard. Resist adding
-them back.
-
-### `conflicts.rs`: rival RGB software detection
-
-Toolhelp process scan for OpenRGB, Glorious Core, Artemis, SignalRGB, VIA, QMK
-Toolbox. `protocol::open()` refuses while any is running. This is a correctness
-feature, not politeness. Shared HID access makes the lighting nondeterministic
-and makes debugging impossible.
-
-### `instance.rs`: single-instance guard
-
-Session-local named mutex. A second launch posts `WM_APP+1` to the first
-instance's hidden power window (found by class name) and exits, so
-double-clicking the exe restores a tray-hidden window.
-
-### `tray.rs`: system tray
-
-Own thread, own pump. `UI_CTX` (a `OnceLock<egui::Context>`) lets both the tray
-and the power window wake the event loop via `request_show()`.
-
-### `config.rs`: settings and the LED map
-
-`config.json` plus the zone constants. Read once at startup, written only on
-Save. Every field has a serde default, so a partial or missing file works.
-
-### `probe.rs`: the `--probe` fallback
-
-Read-only, no window. Exists for the one case `--debug` cannot cover: a machine
-where the GUI will not start. Writes `probe.txt`.
-
-### `icon.rs`: procedural tray/window icon
-
-32×32 RGBA drawn in code so there is no asset file to ship.
-
----
-
-## Verified protocol reference
-
-Everything here is confirmed against this firmware. Command ids from the QMK
-OpenRGB source; field layouts confirmed by read-back or by looking at the board.
-
-```
-Transport : Raw HID, usage page 0xFF60 / usage 0x61
-Device    : VID 504B  PID 320F  interface MI_01
-Protocol  : OpenRGB v14   (GET_PROTOCOL_VERSION -> 01 0E ..)
-Packet    : 64-byte reports (measured; QMK's stock 32 is wrong here)
-```
-
-hidapi writes take a leading report-id byte, so **firmware `data[n]` is our
-`out[n+1]`**. Layouts below are in firmware indexing.
-
-```
-0x01 GET_PROTOCOL_VERSION   -> [cmd][version]              OpenRGB: 1 byte
-                                                           VIA: big-endian u16
-0x04 GET_MODE_INFO          -> [cmd][mode][speed][hue][sat][val]
-0x07 SET_MODE               <- [cmd][hue][sat][val][mode][speed][save]
-0x08 SET_SINGLE_LED         <- [cmd][led][r][g][b]
-```
-
-`SET_MODE` is sent as hue 0, sat 255, **val 255** (a zero here blanks the
-board), mode 45, speed 127, **save 0** (never write EEPROM).
-
-### Why SET_LEDS is not used
-
-`DIRECT_MODE_SET_LEDS` (0x09) takes a start index and a count. Which order was
-never settled. The firmware source said `[first][count]`, but sending that
-produced a one-byte colour shift, so this firmware's build differs from the PR.
-
-Getting it wrong is not cosmetic. With the bytes reversed, a packet starting at
-LED 40 declares a count of 40, far more LEDs than a 64-byte packet holds. The
-firmware reads past the end, the endpoint stops draining, and because lighting
-and typing share one USB device, **key-up reports go missing and the last key
-pressed repeats until the keyboard is replugged.**
-
-`SET_SINGLE_LED` cannot overrun by construction, is confirmed correct, and for a
-reactive effect is genuinely the better fit. A decay touches a handful of LEDs,
-so a tick costs a handful of writes and idle costs none. The bulk path is a
-performance answer to a problem this app does not have.
-
----
-
-## Hardware map
-
-Established by lighting each index individually and looking.
-
-| LEDs | Zone |
-| --- | --- |
-| 0-103 | Main matrix |
-| 104-112 | Left underglow, 104 at the top |
-| **113** | **nothing, no LED wired** |
-| 114-122 | Right underglow, 114 at the **bottom** |
-| **123** | **nothing, no LED wired** |
-| 124 | Knob accent |
-
-Main matrix order is row-major, left to right, top to bottom, with the nav
-cluster and numpad included in each row:
-
-```
-Row 1  (16)  LED   0.. 15   Esc F1..F12 PrtSc ScrLk Pause
-Row 2  (21)  LED  16.. 36   ` 1..0 - = Bksp | Ins Home PgUp | NumLk / * -
-Row 3  (21)  LED  37.. 57   Tab Q..P [ ] \  | Del End PgDn | 7 8 9 +
-Row 4  (16)  LED  58.. 73   Caps A..L ; ' Enter      | 4 5 6
-Row 5  (17)  LED  74.. 90   LShift Z../ RShift | Up  | 1 2 3 NumEnter
-Row 6  (13)  LED  91..103   LCtrl LWin LAlt Space RAlt Fn Menu RCtrl
-                            | Left Down Right | 0 .
-```
-
-The dead indexes are held at black so a frame is fully determined rather than
-carrying stale bytes.
-
----
-
-## config.json
-
-Read once at startup; written only when **Save** is clicked. Moving a slider
-updates the keyboard live through the channel and never touches disk.
-
-The colours below are just the shipped defaults, one person's taste and nothing
-structural. Every `zones` entry, `press_color` and the Caps Lock colour is a
-picker in the GUI, so edit them there or in this file, whichever you prefer.
-
-```json
-{
-  "zones": {
-    "main_keys": "#00FF00",
-    "left_underglow": "#001900",
-    "right_underglow": "#FFF0C8",
-    "knob_accent": "#000000"
-  },
-  "reactive_effect": { "press_color": "#0000FF", "fade_duration_sec": 0.65 },
-  "caps_lock_indicator": { "enabled": true, "color": "#00FF00" },
-  "start_hidden": false,
-  "device": { "vid": null, "pid": null, "packet_size": null, "direct_mode": 45 }
-}
-```
-
-- `vid` / `pid`: optional hard filter, only needed with several QMK devices
-  attached. `"0x320F"`, `"320F"` and `12815` all parse.
-- `packet_size`: `null` measures it from the HID report descriptor. Override
-  only if that fails.
-- `direct_mode`: the firmware effect that hands the LEDs to the host. **45** on
-  this keyboard. `0` turns the board off.
-- `caps_lock_indicator`: while Caps Lock is on, the knob LED (124) shows
-  `color` instead of `knob_accent`. On by default. Not applied to the final
-  frame at shutdown, since nothing would turn it back off afterwards.
-
-`keymap.json` is written only by **Learn keymap…**. If it's absent, the built-in
-table is used.
-
----
-
-## Working in this repo
-
-- Windows-only by design (Win32 hook, tray, power broadcasts).
-- `cargo clippy --all-targets -- -D warnings` is expected to pass clean.
-- Editing on the original author's machine: the Bash tool fails to fork, so use
-  PowerShell. Do **not** round-trip source through
-  `Get-Content | Set-Content`, because it decodes as CP1252 and re-encodes as
-  UTF-8, silently mangling every non-ASCII character in the file.
-
----
-
-## Diagnostics
-
-```bash
-gmmk3_rgb.exe --debug
-```
-
-Press **Run checks**. Each step reports what it found *and what to do*:
-
-| Check | A failure means |
-| --- | --- |
-| Other RGB software | something else holds the connection, so close it |
-| Keyboard found | not plugged in, or not running QMK with OpenRGB support |
-| Connect to keyboard | in VIA mode (`Fn+O`), or held by another program |
-| Lighting protocol | which protocol answered, and its version |
-| Packet size | read from the keyboard's own HID descriptor |
-| Hand lighting to the app | the direct-mode switch was refused |
-| Set every key green | the keyboard stopped accepting data |
-
-It then asks whether the keyboard *actually turned green*, because software
-cannot see your keyboard and those are different questions. **Save report**
-writes `debug.txt`: results, that answer, and the keyboard's replies to every
-read-only command.
-
-`--probe` is the read-only, no-window fallback for when the GUI will not start.
-
-### Symptom: a key sticks and repeats, `hid_write … Overlapped I/O in progress`
-
-The endpoint stalled. Because lighting and typing share one USB device, a
-stalled OUT pipe swallows key-up reports. Historically caused by a wrong report
-size or a misframed bulk write; both are now designed out. Unplug and replug to
-recover, then use the stress test in `--debug` to see whether it reproduces.
-
----
-
-## Deliberately not done
-
-- **Bulk `SET_LEDS`.** See above.
-- **A GUI control for `direct_mode`.** A wrong value silently disables the whole
-  mode switch, so `config.json` only.
-- **Layer-aware knob colour.** Possible but needs firmware work, since Fn never
-  reaches the host. Either a QMK `rgb_matrix_indicators_advanced_user()` hook
-  that paints LED 124 itself (simplest), or firmware sending layer changes over
-  Raw HID with a tag outside the OpenRGB command range for the app to read.
+## Known limits
+
+- **Windows only.** WinForms, P/Invoke into `user32.dll` and `dwmapi.dll`, and
+  the tray API. There is no cross-platform path from here.
+- **Eight slots, hardcoded.** `MaxSnippets = 8` because there are eight
+  comfortable letter keys. Raising it means finding more keys.
+- **Text only.** No images, no files, no rich text.
+- **Snippets are stored in plaintext.** `%APPDATA%\OctoCopy\OctoCopy_Data.json`
+  is an unencrypted file readable by anything running as your user. Don't keep
+  passwords in it.
+- **The hotkey isn't configurable.** `Ctrl + Alt + C` and the eight letters are
+  compiled in. If another app has already claimed `Ctrl + Alt + C`,
+  `RegisterHotKey` fails silently and the global summon just won't work.
+- **The tray left-click uses reflection.** It calls a private .NET method. A
+  future framework change could break it. It would break safely, but it would
+  break.
