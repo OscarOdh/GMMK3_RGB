@@ -5,10 +5,11 @@
 A tiny Windows tray app that holds up to 8 pieces of text at once, so you can
 paste any of them instantly without going back to hunt for the original.
 
-<img src="docs/octocopy.png" width="420"
-     alt="The OctoCopy window in dark mode: eight rows, each a Copy button beside
-     a text box holding a snippet, with Add, Remove and Clear All along the top
-     and an Options and Help menu bar.">
+<img src="docs/GMMK3RGB.png" width="420"
+     alt="The GMMK3 RGB control window: live device status showing the detected
+     keyboard, protocol version, packet size and frames sent; colour pickers for
+     the four LED zones with their index ranges; a Caps Lock indicator toggle;
+     the reactive press colour and fade-back slider; and keymap learning.">
 
 ### ⬇ [**Download OctoCopy.exe**](https://github.com/OscarOdh/OctoCopy/raw/main/OctoCopy.exe) · 95 KB
 
